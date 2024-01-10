@@ -6,6 +6,8 @@ from typing import List, Union
 from mmengine.fileio import get_local_path
 
 from mmdet.registry import DATASETS
+from mmdet.utils.cocoh5_helper import get_h5_file
+import numpy as np
 from .api_wrappers import COCO
 from .base_det_dataset import BaseDetDataset
 
@@ -62,9 +64,16 @@ class CocoDataset(BaseDetDataset):
         Returns:
             List[dict]: A list of annotation.
         """  # noqa: E501
-        with get_local_path(
-                self.ann_file, backend_args=self.backend_args) as local_path:
-            self.coco = self.COCOAPI(local_path)
+        # either provide h5_file path or data_root
+        if not self.h5_file is None:
+            # use HDF5 COCO dataset, data_root should be '' to avoid prefixes in the HDF5 file
+            assert self.data_root == ''
+            self.coco = self.COCOAPI(self.ann_file, self.h5_file)
+        else:
+            # use COCO raw dataset
+            with get_local_path(
+                    self.ann_file, backend_args=self.backend_args) as local_path:
+                self.coco = self.COCOAPI(local_path)
         # The order of returned `cat_ids` will not
         # change with the order of the `classes`
         self.cat_ids = self.coco.get_cat_ids(
@@ -95,6 +104,10 @@ class CocoDataset(BaseDetDataset):
                 total_ann_ids
             ), f"Annotation ids in '{self.ann_file}' are not unique!"
 
+
+        # Before deleting self.coco, keep the hf object if we are using HDF5 file
+        if self.h5_file is not None:
+            self.hf = self.coco.hf
         del self.coco
 
         return data_list
@@ -199,3 +212,14 @@ class CocoDataset(BaseDetDataset):
                 valid_data_infos.append(data_info)
 
         return valid_data_infos
+
+    def prepare_data(self, idx):
+        # A workaround function for loading HDF5 functions
+        # If we are using HDF5 file, we need to load the image first from the hf dataset object
+        # otherwise we can just use the default prepare_data function
+        if self.h5_file is not None:
+            data_info = self.get_data_info(idx)
+            data_info['img'] = get_h5_file(self.hf, data_info['img_path'])
+            return self.pipeline(data_info)
+        else:
+            return super().prepare_data(idx)

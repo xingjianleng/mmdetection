@@ -17,6 +17,23 @@ from mmdet.structures.bbox.box_type import autocast_box_type
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 
 
+# The class for transformingthe JPEG image to a usable form
+# use the _pillow2array function to convert the PIL image to a numpy array
+# while *preserving the required color_type & channel_order*
+@TRANSFORMS.register_module()
+class LoadImageFromBytes(LoadImageFromFile):
+    def transform(self, results: dict) -> dict:
+        img = mmcv.imfrombytes(
+                results['img'], flag=self.color_type, backend=self.imdecode_backend)
+        if self.to_float32:
+            img = img.astype(np.float32)
+
+        results['img'] = img
+        results['img_shape'] = img.shape[:2]
+        results['ori_shape'] = img.shape[:2]
+        return results
+
+
 @TRANSFORMS.register_module()
 class LoadImageFromNDArray(LoadImageFromFile):
     """Load an image from ``results['img']``.

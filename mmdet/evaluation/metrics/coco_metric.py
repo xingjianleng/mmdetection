@@ -69,6 +69,7 @@ class CocoMetric(BaseMetric):
 
     def __init__(self,
                  ann_file: Optional[str] = None,
+                 h5_file: Optional[str] = None,
                  metric: Union[str, List[str]] = 'bbox',
                  classwise: bool = False,
                  proposal_nums: Sequence[int] = (100, 300, 1000),
@@ -124,21 +125,26 @@ class CocoMetric(BaseMetric):
 
         # if ann_file is not specified,
         # initialize coco api with the converted dataset
+        
+        # Support H5 COCO dataset. If h5_file is provided, use HDF5 COCO dataset
         if ann_file is not None:
-            with get_local_path(
-                    ann_file, backend_args=self.backend_args) as local_path:
-                self._coco_api = COCO(local_path)
-                if sort_categories:
-                    # 'categories' list in objects365_train.json and
-                    # objects365_val.json is inconsistent, need sort
-                    # list(or dict) before get cat_ids.
-                    cats = self._coco_api.cats
-                    sorted_cats = {i: cats[i] for i in sorted(cats)}
-                    self._coco_api.cats = sorted_cats
-                    categories = self._coco_api.dataset['categories']
-                    sorted_categories = sorted(
-                        categories, key=lambda i: i['id'])
-                    self._coco_api.dataset['categories'] = sorted_categories
+            if h5_file is None:
+                with get_local_path(
+                        ann_file, backend_args=self.backend_args) as local_path:
+                    self._coco_api = COCO(local_path)
+            else:
+                self._coco_api = COCO(ann_file, h5_file)
+            if sort_categories:
+                # 'categories' list in objects365_train.json and
+                # objects365_val.json is inconsistent, need sort
+                # list(or dict) before get cat_ids.
+                cats = self._coco_api.cats
+                sorted_cats = {i: cats[i] for i in sorted(cats)}
+                self._coco_api.cats = sorted_cats
+                categories = self._coco_api.dataset['categories']
+                sorted_categories = sorted(
+                    categories, key=lambda i: i['id'])
+                self._coco_api.dataset['categories'] = sorted_categories
         else:
             self._coco_api = None
 

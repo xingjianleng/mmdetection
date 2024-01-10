@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from mmengine.dataset import BaseDataset
 from mmengine.fileio import load
@@ -33,12 +33,20 @@ class BaseDetDataset(BaseDataset):
                  backend_args: dict = None,
                  return_classes: bool = False,
                  caption_prompt: Optional[dict] = None,
+                 h5_file = None,
                  **kwargs) -> None:
         self.seg_map_suffix = seg_map_suffix
         self.proposal_file = proposal_file
         self.backend_args = backend_args
         self.return_classes = return_classes
         self.caption_prompt = caption_prompt
+        self.h5_file = h5_file
+
+        # Currently only support h5_file for the COCO dataset
+        if self.__class__.__name__ != 'CocoDataset':
+            assert self.h5_file is None, \
+                'h5_file is only supported for COCO dataset.'
+
         if self.caption_prompt is not None:
             assert self.return_classes, \
                 'return_classes must be True when using caption_prompt'

@@ -17,12 +17,12 @@ class COCO(_COCO):
     the same interface as LVIS class.
     """
 
-    def __init__(self, annotation_file=None):
+    def __init__(self, annotation_file=None, h5_file=None):
         if getattr(pycocotools, '__version__', '0') >= '12.0.2':
             warnings.warn(
                 'mmpycocotools is deprecated. Please install official pycocotools by "pip install pycocotools"',  # noqa: E501
                 UserWarning)
-        super().__init__(annotation_file=annotation_file)
+        super().__init__(annotation_file=annotation_file, h5_file=h5_file)
         self.img_ann_map = self.imgToAnns
         self.cat_img_map = self.catToImgs
 
