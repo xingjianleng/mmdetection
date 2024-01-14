@@ -6,8 +6,7 @@ from typing import List, Union
 from mmengine.fileio import get_local_path
 
 from mmdet.registry import DATASETS
-from mmdet.utils.cocoh5_helper import get_h5_file
-import numpy as np
+from mmdet.utils.cocoh5_helper import get_raw_from_h5
 from .api_wrappers import COCO
 from .base_det_dataset import BaseDetDataset
 
@@ -214,12 +213,12 @@ class CocoDataset(BaseDetDataset):
         return valid_data_infos
 
     def prepare_data(self, idx):
-        # A workaround function for loading HDF5 functions
+        # A workaround for loading HDF5 functions by overriding the prepare_data function
         # If we are using HDF5 file, we need to load the image first from the hf dataset object
         # otherwise we can just use the default prepare_data function
         if self.h5_file is not None:
             data_info = self.get_data_info(idx)
-            data_info['img'] = get_h5_file(self.hf, data_info['img_path'])
+            data_info['img'] = get_raw_from_h5(self.hf, data_info['img_path'])
             return self.pipeline(data_info)
         else:
             return super().prepare_data(idx)
